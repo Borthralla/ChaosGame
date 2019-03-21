@@ -31,33 +31,7 @@ func make_points(num_points int, num_verts int, length int, iterations int) []im
 	return points
 }
 
-func count_points(num_points int, num_verts int, length int, iterations int) (map[image.Point]int, int)  {
-	if (length % 2 == 0) {
-		length -= 1
-	}
 
-	center := image.Point{length / 2, length / 2}
-
-	vertices := make_vertices(num_verts, length)
-
-	point_counts := make(map[image.Point]int, length * length)
-
-	max_count := 0
-
-	for i := 0; i < num_points; i++ {
-		point := make_point(center, vertices, iterations)
-
-		count := point_counts[point]
-		count += 1
-		point_counts[point] = count
-		if (count > max_count) {
-			max_count = count
-		}
-
-	}
-
-	return point_counts, max_count
-}
 
 func make_vertices(num_verts int, length int) []image.Point {
 	if (length % 2 == 0) {
@@ -122,34 +96,9 @@ func make_point_rand(center image.Point, vertices []image.Point, iterations int,
 
 }
 
-func parallel_count_points(num_points int, num_verts int, length int, iterations int) (map[image.Point]int, int) {
-	all_counts := make(chan (map[image.Point]int), 4) // 4 cpus boi
-	point_counts := make(map[image.Point]int, length * length)
 
 
-	for i := 0; i < 4; i++ {
-		go point_generator(num_points / 4, num_verts, length, iterations, all_counts)
-	}
-
-	max := 0
-
-	for i := 0; i < 4; i++ {
-		counts := <- all_counts
-		fmt.Printf("%d\n", i)
-		for point, count := range counts {
-			new_count := count + point_counts[point]
-			point_counts[point] = new_count
-			if new_count > max {
-				max = new_count
-			}
-		}
-	}
-	return point_counts, max
-
-
-}
-
-func arr_count_points(num_points int, num_verts int, length int, iterations int) ([]int, int)  {
+func count_points(num_points int, num_verts int, length int, iterations int) ([]int, int)  {
 	if (length % 2 == 0) {
 		length -= 1
 	}
@@ -176,7 +125,7 @@ func arr_count_points(num_points int, num_verts int, length int, iterations int)
 	return point_counts, max_count
 }
 
-func parallel_arr_count_points(num_points int, num_verts int, length int, iterations int) ([]int, int) {
+func parallel_count_points(num_points int, num_verts int, length int, iterations int) ([]int, int) {
 	if (length % 2 == 0) {
 		length -= 1
 	}
@@ -194,7 +143,7 @@ func parallel_arr_count_points(num_points int, num_verts int, length int, iterat
 	done := make(chan int, 4)
 
 	for i := 0; i < num_cpus; i++ {
-		go arr_point_generator(num_points / num_cpus, point_counts, done, center, vertices, iterations, length)
+		go point_generator(num_points / num_cpus, point_counts, done, center, vertices, iterations, length)
 	}
 
 	for i := 0; i < num_cpus; i++ {
@@ -213,7 +162,7 @@ func parallel_arr_count_points(num_points int, num_verts int, length int, iterat
 
 }
 
-func arr_point_generator(num_points int, point_counts []int, done chan int, center image.Point, vertices []image.Point, iterations int, length int) {
+func point_generator(num_points int, point_counts []int, done chan int, center image.Point, vertices []image.Point, iterations int, length int) {
 	src := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(src)
 	for i := 0; i < num_points; i++ {
@@ -226,35 +175,7 @@ func arr_point_generator(num_points int, point_counts []int, done chan int, cent
 
 }
 
-
-func point_generator(num_points int, num_verts int, length int, iterations int, results chan map[image.Point]int) {
-	counts, _ := count_points(num_points, num_verts, length, iterations)
-	results <- counts
-}
-
-func make_image(counts map[image.Point]int, max_count int, length int) {
-	result := image.NewRGBA(image.Rect(0,0, length, length))
-
-	max_count_flt := float64(max_count)
-
-	for point, count := range counts {
-		p := uint8(math.Round(255 * (1 - float64(count) / max_count_flt)))
-		result.Set(point.X, point.Y, color.RGBA{p,p,p,255})
-	}
-
-	fmt.Printf("Writing image")
-	outputFile, err := os.Create("test.png")
-
-	if err != nil {
-    	fmt.Printf("%s", err)
-    	return
-    }
-
-    png.Encode(outputFile, result)
-
-}
-
-func arr_make_image(counts []int, max_count int, length int) {
+func make_image(counts []int, max_count int, length int) {
 	result := image.NewRGBA(image.Rect(0,0, length, length))
 
 	if length % 2 == 0 {
@@ -281,14 +202,19 @@ func arr_make_image(counts []int, max_count int, length int) {
     png.Encode(outputFile, result)
 }
 
+func save_fractal(num_points int, num_sides int, length int, iterations int) {
+	fmt.Printf("Making points\n")
+	counts, max := parallel_count_points(num_points, num_sides, length, iterations)
+	fmt.Printf("Making Image\n")
+	make_image(counts, max, length)
+}
+
 
 
 func main() {
+
 	rand.Seed(time.Now().UTC().UnixNano())
-	fmt.Printf("Making points\n")
-	counts, max := parallel_arr_count_points(300000000, 5, 2000, 25)
-	fmt.Printf("Making Image\n")
-	arr_make_image(counts, max, 2000)
+	save_fractal(300000000, 5, 2000, 25)
 }
 
 // 6 seconds
