@@ -117,7 +117,7 @@ func count_points(num_points int, num_verts int, length int, iterations int) ([]
 	return point_counts, max_count
 }
 
-func parallel_count_points(num_points int, num_verts int, length int, iterations int) ([]int, int) {
+func parallel_count_points(num_points int, num_verts int, length int, iterations int, num_threads int) ([]int, int) {
 
 	center := float64(length) / 2
 
@@ -126,8 +126,6 @@ func parallel_count_points(num_points int, num_verts int, length int, iterations
 	point_counts := make([]int, length * length, length * length)
 
 	max_count := 0
-
-	num_threads := 6
 
 	done := make(chan int, num_threads)
 
@@ -192,9 +190,9 @@ func make_image(counts []int, max_count int, length int) {
     png.Encode(outputFile, result)
 }
 
-func save_fractal(num_points int, num_sides int, length int, iterations int) {
+func save_fractal(num_points int, num_sides int, length int, iterations int, num_threads int) {
 	fmt.Printf("Making points\n")
-	counts, max := parallel_count_points(num_points, num_sides, length, iterations)
+	counts, max := parallel_count_points(num_points, num_sides, length, iterations, num_threads)
 	fmt.Printf("Max hits: %d\n",max)
 	fmt.Printf("Making Image\n")
 	make_image(counts, max, length)
@@ -205,5 +203,5 @@ func save_fractal(num_points int, num_sides int, length int, iterations int) {
 func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	save_fractal(100000000, 5, 2000, 25)
+	save_fractal(100000000, 5, 2000, 25, 6)
 }
