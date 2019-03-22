@@ -32,21 +32,13 @@ func make_points(num_points int, num_verts int, length int, iterations int) []im
 	return points
 }
 
-
-
-
-
 func make_vertices(num_verts int, length int) []Flt_Point {
 	
 	radius := float64(length) / 2
 
-
 	vertices := make([]Flt_Point, num_verts, num_verts)
 	
 	var theta float64 = 2 * math.Pi / float64(num_verts)
-
-	//Note that the rounding down is on purpose.
-	
 
 	for i := 0; i < num_verts; i++ {
 
@@ -135,15 +127,15 @@ func parallel_count_points(num_points int, num_verts int, length int, iterations
 
 	max_count := 0
 
-	num_cpus := 6
+	num_threads := 6
 
-	done := make(chan int, num_cpus)
+	done := make(chan int, num_threads)
 
-	for i := 0; i < num_cpus; i++ {
-		go point_generator(num_points / num_cpus, point_counts, done, center, vertices, iterations, length, int64(i))
+	for i := 0; i < num_threads; i++ {
+		go point_generator(num_points / num_threads, point_counts, done, center, vertices, iterations, length, int64(i))
 	}
 
-	for i := 0; i < num_cpus; i++ {
+	for i := 0; i < num_threads; i++ {
 		<- done 
 	}
 
@@ -213,7 +205,5 @@ func save_fractal(num_points int, num_sides int, length int, iterations int) {
 func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	save_fractal(10000000000, 5, 4000, 25)
+	save_fractal(100000000, 5, 2000, 25)
 }
-
-// 6 seconds
