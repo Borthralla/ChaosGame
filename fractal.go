@@ -11,14 +11,15 @@ import (
 	"os"
 )
 
+type Flt_Point struct {
+	X float64
+	Y float64
+}
+
 //This function generates points using the chaos game algorithm
 func make_points(num_points int, num_verts int, length int, iterations int) []image.Point {
 
-	if (length % 2 == 0) {
-		length -= 1
-	}
-
-	center := image.Point{length / 2, length / 2}
+	center := float64(length) / 2
 
 	vertices := make_vertices(num_verts, length)
 
@@ -33,29 +34,29 @@ func make_points(num_points int, num_verts int, length int, iterations int) []im
 
 
 
-func make_vertices(num_verts int, length int) []image.Point {
-	if (length % 2 == 0) {
-		length -= 1
-	}
 
-	center := image.Point{length / 2, length / 2}
 
-	vertices := make([]image.Point, num_verts, num_verts)
+func make_vertices(num_verts int, length int) []Flt_Point {
+	
+	radius := float64(length) / 2
+
+
+	vertices := make([]Flt_Point, num_verts, num_verts)
 	
 	var theta float64 = 2 * math.Pi / float64(num_verts)
 
 	//Note that the rounding down is on purpose.
-	flt_length := float64(length / 2)
+	
 
 	for i := 0; i < num_verts; i++ {
 
 		angle := float64(i) * theta
 
-		dx := int(math.Round(math.Cos(angle) * flt_length))
-		dy := int(math.Round(math.Sin(angle) * flt_length))
+		dx := math.Cos(angle) * radius
+		dy := math.Sin(angle) * radius
 
 		//Note that the y axis is inverted
-		vertex := image.Point{center.X + dx, center.Y - dy}
+		vertex := Flt_Point{radius + dx, radius - dy}
 
 		vertices[i] = vertex
 
@@ -64,46 +65,45 @@ func make_vertices(num_verts int, length int) []image.Point {
 	return vertices
 }
 
-func make_point(center image.Point, vertices []image.Point, iterations int) image.Point {
+func make_point(center float64, vertices []Flt_Point, iterations int) image.Point {
 
-	var vertex image.Point;
+	var vertex Flt_Point;
 
-	current_point := center
+	current_x := center
+	current_y := center
 
 	for i := 0; i < iterations; i++ {
 		vertex = vertices[rand.Intn(len(vertices))]
-		current_point.X += int(math.Round(float64(vertex.X - current_point.X) / 2))
-		current_point.Y += int(math.Round(float64(vertex.Y - current_point.Y) / 2))
+		current_x += (vertex.X - current_x) / 2
+		current_y += (vertex.Y - current_y) / 2
 	}
 
-	return current_point
+	return image.Point{int(current_x), int(current_y)}
 
 }
 
-func make_point_rand(center image.Point, vertices []image.Point, iterations int, r *rand.Rand) image.Point {
+func make_point_rand(center float64, vertices []Flt_Point, iterations int, r *rand.Rand) image.Point {
 
-	var vertex image.Point;
+	var vertex Flt_Point;
 
-	current_point := center
+	current_x := center
+	current_y := center
 
 	for i := 0; i < iterations; i++ {
 		vertex = vertices[r.Intn(len(vertices))]
-		current_point.X += int(math.Round(float64(vertex.X - current_point.X) / 2))
-		current_point.Y += int(math.Round(float64(vertex.Y - current_point.Y) / 2))
+		current_x += (vertex.X - current_x) / 2
+		current_y += (vertex.Y - current_y) / 2
 	}
 
-	return current_point
+	return image.Point{int(current_x), int(current_y)}
 
 }
 
 
 
 func count_points(num_points int, num_verts int, length int, iterations int) ([]int, int)  {
-	if (length % 2 == 0) {
-		length -= 1
-	}
 
-	center := image.Point{length / 2, length / 2}
+	center := float64(length) / 2
 
 	vertices := make_vertices(num_verts, length)
 
@@ -126,11 +126,8 @@ func count_points(num_points int, num_verts int, length int, iterations int) ([]
 }
 
 func parallel_count_points(num_points int, num_verts int, length int, iterations int) ([]int, int) {
-	if (length % 2 == 0) {
-		length -= 1
-	}
 
-	center := image.Point{length / 2, length / 2}
+	center := float64(length) / 2
 
 	vertices := make_vertices(num_verts, length)
 
@@ -162,7 +159,7 @@ func parallel_count_points(num_points int, num_verts int, length int, iterations
 
 }
 
-func point_generator(num_points int, point_counts []int, done chan int, center image.Point, vertices []image.Point, iterations int, length int, seed int64) {
+func point_generator(num_points int, point_counts []int, done chan int, center float64, vertices []Flt_Point, iterations int, length int, seed int64) {
 	src := rand.NewSource(time.Now().UnixNano() + 2147483000 * seed)
 	r := rand.New(src)
 	for i := 0; i < num_points; i++ {
@@ -182,13 +179,10 @@ func point_generator(num_points int, point_counts []int, done chan int, center i
 func make_image(counts []int, max_count int, length int) {
 	result := image.NewRGBA(image.Rect(0,0, length, length))
 
-	if length % 2 == 0 {
-		length -= 1
-	}
-
 	max_count_flt := float64(max_count)
 
 	for index, count := range counts {
+		// Swapping x and y and negating y to make things stand vertically
 		x := index / length
 		y := length - 1 - (index % length)
 		p := uint8(math.Round(255 * (1 - float64(count) / max_count_flt)))
@@ -218,7 +212,7 @@ func save_fractal(num_points int, num_sides int, length int, iterations int) {
 func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	save_fractal(9000000000, 9, 4000, 25)
+	save_fractal(10000000000, 9, 4000, 25)
 }
 
 // 6 seconds
