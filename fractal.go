@@ -143,7 +143,7 @@ func parallel_count_points(num_points int, num_verts int, length int, iterations
 	done := make(chan int, 4)
 
 	for i := 0; i < num_cpus; i++ {
-		go point_generator(num_points / num_cpus, point_counts, done, center, vertices, iterations, length)
+		go point_generator(num_points / num_cpus, point_counts, done, center, vertices, iterations, length, int64(i))
 	}
 
 	for i := 0; i < num_cpus; i++ {
@@ -162,13 +162,17 @@ func parallel_count_points(num_points int, num_verts int, length int, iterations
 
 }
 
-func point_generator(num_points int, point_counts []int, done chan int, center image.Point, vertices []image.Point, iterations int, length int) {
-	src := rand.NewSource(time.Now().UnixNano())
+func point_generator(num_points int, point_counts []int, done chan int, center image.Point, vertices []image.Point, iterations int, length int, seed int64) {
+	src := rand.NewSource(time.Now().UnixNano() + 2147483000 * seed)
 	r := rand.New(src)
 	for i := 0; i < num_points; i++ {
 		point := make_point_rand(center, vertices, iterations, r)
 		index := point.Y * length + point.X
 		point_counts[index] += 1
+
+		if (i & 33554431 == 0) {
+			fmt.Printf("%f%% done\n", 100 * float64(i) / float64(num_points))
+		}
 	}
 
 	done <- 1
@@ -214,7 +218,7 @@ func save_fractal(num_points int, num_sides int, length int, iterations int) {
 func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	save_fractal(300000000, 5, 2000, 25)
+	save_fractal(9000000000, 9, 4000, 25)
 }
 
 // 6 seconds
