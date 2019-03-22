@@ -135,7 +135,7 @@ func parallel_count_points(num_points int, num_verts int, length int, iterations
 
 	max_count := 0
 
-	num_cpus := 8
+	num_cpus := 6
 
 	done := make(chan int, num_cpus)
 
@@ -177,7 +177,7 @@ func point_generator(num_points int, point_counts []int, done chan int, center f
 }
 
 func make_image(counts []int, max_count int, length int) {
-	result := image.NewRGBA(image.Rect(0,0, length, length))
+	result := image.NewGray16(image.Rect(0,0, length, length))
 
 	max_count_flt := float64(max_count)
 
@@ -185,8 +185,8 @@ func make_image(counts []int, max_count int, length int) {
 		// Swapping x and y and negating y to make things stand vertically
 		x := index / length
 		y := length - 1 - (index % length)
-		p := uint8(math.Round(255 * (1 - float64(count) / max_count_flt)))
-		result.Set(x, y, color.RGBA{p,p,p,255})
+		p := uint16(math.Round(65535 * (1 - float64(count) / max_count_flt)))
+		result.Set(x, y, color.Gray16{p})
 	}
 
 	fmt.Printf("Writing image")
@@ -203,6 +203,7 @@ func make_image(counts []int, max_count int, length int) {
 func save_fractal(num_points int, num_sides int, length int, iterations int) {
 	fmt.Printf("Making points\n")
 	counts, max := parallel_count_points(num_points, num_sides, length, iterations)
+	fmt.Printf("Max hits: %d\n",max)
 	fmt.Printf("Making Image\n")
 	make_image(counts, max, length)
 }
@@ -212,7 +213,7 @@ func save_fractal(num_points int, num_sides int, length int, iterations int) {
 func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	save_fractal(240000000000, 5, 8000, 25)
+	save_fractal(10000000000, 5, 4000, 25)
 }
 
 // 6 seconds
